@@ -2,3 +2,5 @@ mindsdb_sdk
 python-dotenv
 pandas
 Flask
+sqlite3
+requests
