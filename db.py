@@ -1,64 +1,60 @@
 import sqlite3
-import os
+from typing import List, Dict, Optional
 
-def create_connection():
-    conn = None
-    try:
-        db_path = os.path.abspath(os.getcwd()) + "\\quiz_database.db"
-        conn = sqlite3.connect(db_path)
-        return conn
-    except sqlite3.Error as e:
-        print(e)
-    return conn
+def get_connection():
+    return sqlite3.connect("quiz_database.db", check_same_thread=False)
 
-def create_quiz(topic, data):
-    conn = create_connection()
+def create_quiz(topic: str, quiz_data: List[Dict[str, str]]) -> None:
+    conn = get_connection()
     cursor = conn.cursor()
-    for entry in data:
-        cursor.execute('''
+    for q in quiz_data:
+        cursor.execute("""
             INSERT INTO quiz_table (topic, question, option_a, option_b, option_c, option_d, correct_answer)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (topic, entry['q'], entry['A'], entry['B'], entry['C'], entry['D'], entry['correct']))
+        """, (
+            topic,
+            q['q'],
+            q['A'],
+            q['B'],
+            q['C'],
+            q['D'],
+            q['correct']
+        ))
     conn.commit()
     conn.close()
 
-def get_quiz(topic):
-    conn = create_connection()
+def get_quiz(topic: str) -> List[Dict[str, str]]:
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('''
+    cursor.execute("""
         SELECT question, option_a, option_b, option_c, option_d, correct_answer
-        FROM quiz_table
-        WHERE topic = ?
-    ''', (topic,))
+        FROM quiz_table WHERE topic = ?
+    """, (topic,))
     rows = cursor.fetchall()
     conn.close()
-    quiz = []
-    for row in rows:
-        quiz.append({
+    return [
+        {
             'question': row[0],
-            'option_a': row[1],
-            'option_b': row[2],
-            'option_c': row[3],
-            'option_d': row[4],
+            'A': row[1],
+            'B': row[2],
+            'C': row[3],
+            'D': row[4],
             'correct_answer': row[5]
-        })
-    return quiz
+        }
+        for row in rows
+    ]
 
-def delete_quiz(topic):
-    conn = create_connection()
+def get_topics() -> List[str]:
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('''
-        DELETE FROM quiz_table
-        WHERE topic = ?
-    ''', (topic,))
+    cursor.execute("SELECT DISTINCT topic FROM quiz_table")
+    topics = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return topics
+
+def delete_quiz(topic: str) -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM quiz_table WHERE topic = ?", (topic,))
     conn.commit()
     conn.close()
-
-def get_topics():
-    conn = create_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT DISTINCT topic FROM quiz_table')
-    topics = cursor.fetchall()
-    conn.commit()
-    conn.close()
-    return [topic[0] for topic in topics]
