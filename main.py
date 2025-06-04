@@ -29,4 +29,16 @@ Return ONLY a valid JSON array of these objects, nothing else."""
 
     body = {
         "model": "openai/gpt-3.5-turbo",
-       
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7
+    }
+
+    try:
+        response = requests.post(API_URL, headers=headers, json=body)
+        response.raise_for_status()
+        result = response.json()
+        answer = result["choices"][0]["message"]["content"]
+        return json.loads(answer)
+    except Exception as e:
+        print(f"Error generating quiz: {e}")
+        return None
